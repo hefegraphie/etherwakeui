@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wake-on-LAN</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <style>
+        .command-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .mac-address {
+            background-color: #eeeeee;
+            border-radius: 10px;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            color: #555555;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .status-dot.online {
+            background-color: #4caf50;
+        }
+        .status-dot.offline {
+            background-color: #f44336;
+        }
+        .input-field {
+            margin-bottom: 20px;
+        }
+        #new-command-form {
+            display: none;
+        }
+        .delete-button {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: red;
+            color: white;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wake-on-LAN</h1>
+        <a class="btn waves-effect waves-light" onclick="toggleForm()">+</a>
+
+        <div id="new-command-form" class="input-field">
+            <input type="text" id="name" placeholder="Name" />
+            <input type="text" id="ip" placeholder="IP-Adresse" />
+            <input type="text" id="mac" placeholder="MAC-Adresse" />
+            <a class="btn waves-effect waves-light" onclick="addCommand()">Rechner hinzufügen</a>
+        </div>
+
+        <div id="command-list"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        window.onload = function() {
+            loadCommands();
+        };
+
+        function toggleForm() {
+            const form = document.getElementById('new-command-form');
+            form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+        }
+
+        function loadCommands() {
+            fetch('/get-commands')
+                .then(response => response.json())
+                .then(commands => {
+                    commands.forEach(command => {
+                        addCommandToUI(command.name, command.ip, command.mac);
+                        pingHost(command.ip);
+                    });
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Befehle:', error);
+                });
+        }
+
+        function addCommand() {
+            const name = document.getElementById('name').value;
+            const ip = document.getElementById('ip').value;
+            const mac = document.getElementById('mac').value;
+
+            if (!name || !ip || !mac) {
+                M.toast({html: 'Bitte Name, IP-Adresse und MAC-Adresse eingeben.'});
+                return;
+            }
+
+            fetch('/add-command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, ip, mac })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addCommandToUI(name, ip, mac);
+                pingHost(ip);
+            })
+            .catch(error => {
+                console.error('Fehler beim Hinzufügen des Rechners:', error);
+            });
+        }
+
+        function addCommandToUI(name, ip, mac) {
+            const commandList = document.getElementById('command-list');
+
+            const card = document.createElement('div');
+            card.className = 'command-card';
+
+            const content = document.createElement('div');
+            content.innerHTML = `<strong>${name}</strong> - <span class="mac-address">${mac}</span>`;
+
+            const status = document.createElement('div');
+            status.className = 'status-dot offline';
+            status.setAttribute('data-ip', ip);
+
+            const deleteButton = document.createElement('div');
+            deleteButton.className = 'delete-button';
+            deleteButton.innerHTML = '-';
+            deleteButton.onclick = function() {
+                deleteCommand(ip);
+            };
+
+            card.appendChild(deleteButton);
+            card.appendChild(content);
+            card.appendChild(status);
+            commandList.appendChild(card);
+        }
+
+        function deleteCommand(ip) {
+            fetch('/delete-command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ip })
+            })
+            .then(response => response.json())
+            .then(data => {
+                location.reload(); // Seite neu laden, um die Liste zu aktualisieren
+            })
+            .catch(error => {
+                console.error('Fehler beim Löschen des Rechners:', error);
+            });
+        }
+
+        function pingHost(ip) {
+            setInterval(() => {
+                fetch(`/ping?ip=${ip}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const statusDot = document.querySelector(`.status-dot[data-ip="${ip}"]`);
+                        if (statusDot) {
+                            statusDot.className = data.isAlive ? 'status-dot online' : 'status-dot offline';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Pingen des Hosts:', error);
+                    });
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

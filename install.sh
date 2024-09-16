@@ -9,7 +9,7 @@ echo "Paketlisten aktualisieren..."
 apt update
 
 echo "Installiere curl, gnupg, git und npm..."
-apt install curl gnupg git -y
+apt install gnupg git -y
 
 # Node.js installieren
 echo "Node.js installieren..."

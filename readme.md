@@ -6,7 +6,7 @@ EtherwakeUI is a simple web-based interface to send Wake-on-LAN (WoL) packets an
 
 - Wake-on-LAN (WoL) functionality to wake up devices on your network.
 - Ping functionality to check if a device is online or offline.
-- Add, edit, and delete devices from the web UI.
+- Add and delete devices from the web UI.
 - Automatically checks the online status of devices.
 
 ## Prerequisites

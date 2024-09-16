@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wake-on-LAN</title>
+    <!-- Materialize CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
     <style>
         .command-card {
@@ -41,16 +42,14 @@
         #new-command-form {
             display: none;
         }
-        .delete-button {
-            width: 20px;
-            height: 20px;
+        .delete-btn {
             border-radius: 50%;
-            background-color: red;
-            color: white;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            font-size: 16px;
             margin-right: 10px;
         }
     </style>
@@ -58,8 +57,11 @@
 <body>
     <div class="container">
         <h1>Wake-on-LAN</h1>
+        
+        <!-- Button zum Anzeigen des Formulars -->
         <a class="btn waves-effect waves-light" onclick="toggleForm()">+</a>
 
+        <!-- Formular zum Hinzufügen neuer Rechner -->
         <div id="new-command-form" class="input-field">
             <input type="text" id="name" placeholder="Name" />
             <input type="text" id="ip" placeholder="IP-Adresse" />
@@ -67,26 +69,32 @@
             <a class="btn waves-effect waves-light" onclick="addCommand()">Rechner hinzufügen</a>
         </div>
 
+        <!-- Bereich für die Liste der Rechner -->
         <div id="command-list"></div>
     </div>
 
+    <!-- Materialize JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
+        // Lade die gespeicherten Rechner, sobald die Seite geladen wird
         window.onload = function() {
             loadCommands();
         };
 
+        // Funktion zum Umschalten der Sichtbarkeit des Formulars
         function toggleForm() {
             const form = document.getElementById('new-command-form');
             form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
         }
 
+        // Funktion zum Laden der gespeicherten Rechner
         function loadCommands() {
             fetch('/get-commands')
                 .then(response => response.json())
                 .then(commands => {
                     commands.forEach(command => {
                         addCommandToUI(command.name, command.ip, command.mac);
+                        // Pinge den Rechner nach dem Laden der Seite
                         pingHost(command.ip);
                     });
                 })
@@ -95,6 +103,7 @@
                 });
         }
 
+        // Funktion zum Hinzufügen eines neuen Rechners (und Speichern auf dem Server)
         function addCommand() {
             const name = document.getElementById('name').value;
             const ip = document.getElementById('ip').value;
@@ -108,77 +117,116 @@
             fetch('/add-command', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name, ip, mac })
+                body: JSON.stringify({ name, ip, mac }),
             })
             .then(response => response.json())
             .then(data => {
                 addCommandToUI(name, ip, mac);
-                pingHost(ip);
+                document.getElementById('name').value = '';
+                document.getElementById('ip').value = '';
+                document.getElementById('mac').value = '';
+                M.toast({html: data.message});
             })
             .catch(error => {
                 console.error('Fehler beim Hinzufügen des Rechners:', error);
             });
         }
 
+        // Funktion, um den Rechner in der UI anzuzeigen
         function addCommandToUI(name, ip, mac) {
-            const commandList = document.getElementById('command-list');
-
-            const card = document.createElement('div');
-            card.className = 'command-card';
-
-            const content = document.createElement('div');
-            content.innerHTML = `<strong>${name}</strong> - <span class="mac-address">${mac}</span>`;
-
-            const status = document.createElement('div');
-            status.className = 'status-dot offline';
-            status.setAttribute('data-ip', ip);
-
-            const deleteButton = document.createElement('div');
-            deleteButton.className = 'delete-button';
-            deleteButton.innerHTML = '-';
-            deleteButton.onclick = function() {
-                deleteCommand(ip);
-            };
-
-            card.appendChild(deleteButton);
-            card.appendChild(content);
-            card.appendChild(status);
-            commandList.appendChild(card);
+            const commandDiv = document.createElement('div');
+            commandDiv.classList.add('command-card');
+            commandDiv.id = `command-${ip}`; // ID für das Löschen hinzufügen
+            commandDiv.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <div>
+                        <!-- Red delete button -->
+                        <button onclick="deleteCommand('${ip}')" class="btn red delete-btn">-</button>
+                    </div>
+                    <div>
+                        <!-- Device name and MAC address with IP -->
+                        <span style="font-weight: bold;">${name}</span>
+                        <span class="mac-address">${mac} (${ip})</span>
+                    </div>
+                </div>
+                <div>
+                    <!-- Online status dot and Wake-on-LAN button -->
+                    <span id="status-dot-${ip}" class="status-dot offline"></span>
+                    <a class="btn waves-effect waves-light" onclick="executeCommand('${ip}', '${mac}')">Wake-on-LAN</a>
+                </div>
+            `;
+            document.getElementById('command-list').appendChild(commandDiv);
         }
 
+        // Funktion, um den Ping auszuführen
+        function pingHost(ip) {
+            fetch('/ping-host', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ip }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusDot = document.getElementById(`status-dot-${ip}`);
+                if (data.message.includes('erreichbar')) {
+                    statusDot.classList.remove('offline');
+                    statusDot.classList.add('online');
+                } else {
+                    statusDot.classList.remove('online');
+                    statusDot.classList.add('offline');
+                }
+            })
+            .catch(error => {
+                console.error('Fehler beim Pingen des Hosts:', error);
+            });
+        }
+
+        // Funktion zum Ausführen des Wake-on-LAN-Befehls
+        function executeCommand(ip, mac) {
+            fetch('/execute-command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ip, mac }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                M.toast({html: data.message});
+                // Pinge den Rechner nach dem Befehl
+                pingHost(ip);
+            })
+            .catch(error => {
+                console.error('Fehler beim Ausführen des Befehls:', error);
+            });
+        }
+
+        // Funktion zum Löschen eines Rechners
         function deleteCommand(ip) {
             fetch('/delete-command', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ ip })
+                body: JSON.stringify({ ip }),
             })
             .then(response => response.json())
             .then(data => {
-                location.reload(); // Seite neu laden, um die Liste zu aktualisieren
+                M.toast({html: data.message});
+                // Entferne den Rechner aus der UI
+                const commandList = document.getElementById('command-list');
+                const commandDiv = document.getElementById(`command-${ip}`);
+                if (commandDiv) {
+                    commandList.removeChild(commandDiv);
+                }
             })
             .catch(error => {
                 console.error('Fehler beim Löschen des Rechners:', error);
             });
-        }
-
-        function pingHost(ip) {
-            setInterval(() => {
-                fetch(`/ping?ip=${ip}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const statusDot = document.querySelector(`.status-dot[data-ip="${ip}"]`);
-                        if (statusDot) {
-                            statusDot.className = data.isAlive ? 'status-dot online' : 'status-dot offline';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Fehler beim Pingen des Hosts:', error);
-                    });
-            }, 5000);
         }
     </script>
 </body>

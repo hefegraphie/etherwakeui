@@ -138,8 +138,8 @@
         function addCommandToUI(name, ip, mac) {
             const commandDiv = document.createElement('div');
             commandDiv.classList.add('command-card');
-            commandDiv.id = command-${ip}; // ID for deletion
-            commandDiv.innerHTML = 
+            commandDiv.id = `command-${ip}`; // ID for deletion
+            commandDiv.innerHTML = `
                 <div style="display: flex; align-items: center;">
                     <div>
                         <!-- Red delete button -->
@@ -156,7 +156,7 @@
                     <span id="status-dot-${ip}" class="status-dot offline"></span>
                     <a class="btn waves-effect waves-light" onclick="executeCommand('${ip}', '${mac}')">Wake-on-LAN</a>
                 </div>
-            ;
+            `;
             document.getElementById('command-list').appendChild(commandDiv);
         }
 
@@ -171,7 +171,7 @@ function pingHost(ip) {
             })
             .then(response => response.json())
             .then(data => {
-                const statusDot = document.getElementById(status-dot-${ip});
+                const statusDot = document.getElementById(`status-dot-${ip}`);
                 if (data.message === 'Device is reachable') {
                     statusDot.classList.remove('offline');
                     statusDot.classList.add('online');
@@ -219,7 +219,7 @@ function pingHost(ip) {
                 M.toast({html: data.message});
                 // Remove the device from the UI
                 const commandList = document.getElementById('command-list');
-                const commandDiv = document.getElementById(command-${ip});
+                const commandDiv = document.getElementById(`command-${ip}`);
                 if (commandDiv) {
                     commandList.removeChild(commandDiv);
                 }

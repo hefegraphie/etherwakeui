@@ -111,6 +111,18 @@ app.post('/execute-command', (req, res) => {
     });
 });
 
+// Endpoint to ping a host
+app.post('/ping-host', (req, res) => {
+    const { ip } = req.body;
+    if (!ip) {
+        return res.status(400).json({ message: 'IP address is required' });
+    }
+
+    startPing(ip, (isAlive) => {
+        res.json({ message: isAlive ? 'Device is reachable' : 'Device is not reachable' });
+    });
+});
+
 // Start the server
 app.listen(3000, () => {
     console.log('Server running on port 3000');

@@ -160,8 +160,8 @@
             document.getElementById('command-list').appendChild(commandDiv);
         }
 
-        // Ping a host
-        function pingHost(ip) {
+// Ping a host and update UI
+function pingHost(ip) {
             fetch('/ping-host', {
                 method: 'POST',
                 headers: {
@@ -172,7 +172,7 @@
             .then(response => response.json())
             .then(data => {
                 const statusDot = document.getElementById(`status-dot-${ip}`);
-                if (data.message.includes('reachable')) {
+                if (data.message === 'Device is reachable') {
                     statusDot.classList.remove('offline');
                     statusDot.classList.add('online');
                 } else {

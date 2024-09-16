@@ -45,43 +45,91 @@ This script will:
 3. Install `etherwake` to send WoL packets.
 4. Set up and run the web server on port 3000.
 
-## Manual Installation
+If you prefer not to use the automated installation script, you can manually set up the project as follows:
 
-If you prefer to install manually, follow these steps:
+1. **Update your system and install required packages:**
 
-### 1. Clone the repository
+    ```bash
+    sudo apt update
+    sudo apt install curl git nodejs npm -y
+    ```
 
-```bash
-git clone https://github.com/hefegraphie/etherwakeui.git
-cd etherwakeui
-```
+2. **Create a project directory and navigate into it:**
 
-### 2. Install Node.js
+    ```bash
+    mkdir etherwakeui
+    cd etherwakeui
+    ```
 
-```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-sudo apt install -y nodejs
-```
+3. **Clone the project from GitHub:**
 
-### 3. Install Dependencies
+    ```bash
+    git clone https://github.com/username/etherwakeui.git .
+    ```
 
-```bash
-npm install
-```
+4. **Create a `package.json` file:**
 
-### 4. Install Etherwake
+    Create a file named `package.json` in the project directory with the following content:
 
-```bash
-sudo apt install etherwake -y
-```
+    ```json
+    {
+      "name": "etherwakeui",
+      "version": "1.0.0",
+      "description": "A web interface for Wake-on-LAN functionality using Node.js and Express.",
+      "main": "server.js",
+      "scripts": {
+        "start": "node server.js"
+      },
+      "dependencies": {
+        "express": "^4.18.2",
+        "ping": "^0.2.2"
+      },
+      "author": "Your Name",
+      "license": "MIT"
+    }
+    ```
 
-### 5. Start the Server
+5. **Install the dependencies:**
 
-```bash
-npm start
-```
+    ```bash
+    npm install
+    ```
 
-This will start the web server on `http://localhost:3000`.
+6. **Start the server:**
+
+    ```bash
+    npm start
+    ```
+
+## Automatic Server Startup
+
+To ensure the server starts automatically after a reboot, follow these steps:
+
+1. **Create a systemd service file:**
+
+    Create a file `/etc/systemd/system/etherwakeui.service` with the following content:
+
+    ```ini
+    [Unit]
+    Description=Etherwake UI Server
+    After=network.target
+
+    [Service]
+    ExecStart=/usr/bin/node /root/etherwakeui/server.js
+    WorkingDirectory=/root/etherwakeui
+    Restart=always
+    User=root
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+2. **Enable and start the service:**
+
+    ```bash
+    sudo systemctl enable etherwakeui
+    sudo systemctl start etherwakeui
+    ```
 
 ## Usage
 

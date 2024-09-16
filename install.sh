@@ -6,8 +6,6 @@ apt update
 # Install necessary packages
 apt install -y curl git nodejs npm etherwake
 
-# Install dotenv package globally
-npm install -g dotenv
 
 # Clone the project repository
 git clone https://github.com/hefegraphie/etherwakeui.git /opt/etherwakeui

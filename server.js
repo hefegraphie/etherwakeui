@@ -67,7 +67,7 @@ app.get('/get-commands', (req, res) => {
         res.status(500).json({ message: 'Fehler beim Laden der Befehle' });
     }
 });
-
+ 
 // Endpunkt zum Hinzufügen eines neuen Rechners
 app.post('/add-command', (req, res) => {
     const { name, ip, mac } = req.body;

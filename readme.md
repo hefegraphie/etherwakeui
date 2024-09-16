@@ -90,7 +90,7 @@ Once the server is running:
 1. Open your web browser and navigate to `http://<your-server-ip>:3000`.
 2. Use the web UI to add devices (Name, IP Address, and MAC Address).
 3. Click "Wake-on-LAN" to send a WoL packet to a device.
-4. The status of the device (online or offline) will be displayed based on ping results.
+4. The status of the device (online or offline) will be displayed based on ping results. Side refresh is mandatory.
 
 ## Project Structure
 

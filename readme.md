@@ -45,6 +45,8 @@ This script will:
 3. Install `etherwake` to send WoL packets.
 4. Set up and run the web server on port 3000.
 
+## Manual Installation
+
 If you prefer not to use the automated installation script, you can manually set up the project as follows:
 
 1. **Update your system and install required packages:**
@@ -101,7 +103,7 @@ If you prefer not to use the automated installation script, you can manually set
     npm start
     ```
 
-## Automatic Server Startup
+### Automatic Server Startup
 
 To ensure the server starts automatically after a reboot, follow these steps:
 

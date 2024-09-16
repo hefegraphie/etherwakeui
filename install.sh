@@ -1,46 +1,49 @@
 #!/bin/bash
 
-# Konfigurierbare Variablen
-PROJECT_NAME="etherwakeui"
-GITHUB_REPO="https://github.com/hefegraphie/etherwakeui.git"  # Ersetze 'username' mit deinem GitHub-Benutzernamen
-
-# Update Paketlisten und installiere Abhängigkeiten
-echo "Paketlisten aktualisieren..."
+# Update package lists
 apt update
 
-echo "Installiere curl, gnupg, git und npm..."
-apt install gnupg git -y
+# Install necessary packages
+apt install -y curl git nodejs npm
 
-# Node.js installieren
-echo "Node.js installieren..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt install -y nodejs
+# Install dotenv package globally
+npm install -g dotenv
 
-# Installiere etherwake
-echo "etherwake installieren..."
-apt install etherwake -y
+# Clone the project repository
+git clone https://github.com/hefegraphie/etherwakeui.git
+cd etherwakeui
 
-# Erstelle das Projektverzeichnis, falls nicht vorhanden
-if [ ! -d "$PROJECT_NAME" ]; then
-    echo "Projektverzeichnis $PROJECT_NAME erstellen..."
-    mkdir "$PROJECT_NAME"
-fi
+# Install project dependencies
+npm install
 
-# Ins Projektverzeichnis wechseln
-cd "$PROJECT_NAME"
+# Create a systemd service file for the Node.js server
+cat <<EOF | sudo tee /etc/systemd/system/etherwakeui.service
+[Unit]
+Description=Etherwake UI Server
+After=network.target
 
-# Projekt von GitHub klonen
-if [ ! -d ".git" ]; then
-    echo "Projekt von GitHub klonen..."
-    git clone "$GITHUB_REPO" .
-else
-    echo "Projektverzeichnis existiert bereits, überspringe das Klonen..."
-fi
+[Service]
+ExecStart=/usr/bin/node /root/etherwakeui/server.js
+WorkingDirectory=/root/etherwakeui
+Restart=always
+User=$(whoami)
+Group=$(whoami)
+Environment=NODE_ENV=production
 
-# Installiere npm-Abhängigkeiten, inklusive express, ping und child_process
-echo "npm-Abhängigkeiten installieren (express, ping, child_process)..."
-npm install express ping child_process
+[Install]
+WantedBy=multi-user.target
+EOF
 
-# Starte den Node.js-Server
-echo "Node.js-Server starten..."
-node server.js
+# Replace /path/to/etherwakeui with the actual path to your project directory
+sudo sed -i "s|/root/etherwakeui|$(pwd)|g" /etc/systemd/system/etherwakeui.service
+
+# Reload systemd to recognize the new service
+sudo systemctl daemon-reload
+
+# Start the service
+sudo systemctl start etherwakeui
+
+# Enable the service to start on boot
+sudo systemctl enable etherwakeui
+
+echo "Installation und Konfiguration abgeschlossen. Der Server läuft jetzt als Dienst."

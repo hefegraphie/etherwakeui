@@ -3,84 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EtherwakeUI</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <title>Wake-on-LAN</title>
+    <!-- Materialize CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
     <style>
-        body {
-            padding: 20px;
+        .command-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .mac-address {
+            background-color: #eeeeee;
+            border-radius: 10px;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            color: #555555;
         }
         .status-dot {
-            display: inline-block;
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            margin-right: 10px;
+            display: inline-block;
+            margin-left: 10px;
         }
-        .online {
-            background-color: green;
+        .status-dot.online {
+            background-color: #4caf50;
         }
-        .offline {
-            background-color: red;
+        .status-dot.offline {
+            background-color: #f44336;
         }
-        .yellow {
-            background-color: yellow;
+        .input-field {
+            margin-bottom: 20px;
         }
-        .command-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #f9f9f9;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-        .mac-address {
-            font-size: 0.9em;
-            color: #666;
+        #new-command-form {
+            display: none;
         }
         .delete-btn {
-            background-color: red !important;
+            border-radius: 50%;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            font-size: 16px;
+            margin-right: 10px;
         }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h3>EtherwakeUI</h3>
-        <div class="row">
-            <div class="input-field col s4">
-                <input id="device-name" type="text">
-                <label for="device-name">Device Name</label>
-            </div>
-            <div class="input-field col s4">
-                <input id="device-ip" type="text">
-                <label for="device-ip">IP Address</label>
-            </div>
-            <div class="input-field col s4">
-                <input id="device-mac" type="text">
-                <label for="device-mac">MAC Address</label>
-            </div>
-            <div class="col s12">
-                <button class="btn waves-effect waves-light" onclick="saveCommand()">Add Device</button>
-            </div>
+        <h1>Wake-on-LAN</h1>
+        
+        <!-- Button to show the form -->
+        <a class="btn waves-effect waves-light" onclick="toggleForm()">+</a>
+
+        <!-- Form to add new devices -->
+        <div id="new-command-form" class="input-field">
+            <input type="text" id="name" placeholder="Name" />
+            <input type="text" id="ip" placeholder="IP Address" />
+            <input type="text" id="mac" placeholder="MAC Address" />
+            <a class="btn waves-effect waves-light" onclick="addCommand()">Add Device</a>
         </div>
 
+        <!-- Section for the list of devices -->
         <div id="command-list"></div>
-
     </div>
 
-    <!-- JavaScript to handle WoL and ping status -->
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
-        // Global object to track the ping and countdown timers
-        const pingTimers = {};
-        const countdownTimers = {};
-
         // Load saved devices when the page loads
         window.onload = function() {
             loadCommands();
         };
+
+        // Toggle form visibility
+        function toggleForm() {
+            const form = document.getElementById('new-command-form');
+            form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+        }
 
         // Load saved commands
         function loadCommands() {
@@ -89,6 +94,8 @@
                 .then(commands => {
                     commands.forEach(command => {
                         addCommandToUI(command.name, command.ip, command.mac);
+                        // Ping the device after loading
+                        pingHost(command.ip);
                     });
                 })
                 .catch(error => {
@@ -96,12 +103,43 @@
                 });
         }
 
+        // Add a new command (and save on the server)
+        function addCommand() {
+            const name = document.getElementById('name').value;
+            const ip = document.getElementById('ip').value;
+            const mac = document.getElementById('mac').value;
+
+            if (!name || !ip || !mac) {
+                M.toast({html: 'Please enter Name, IP Address, and MAC Address.'});
+                return;
+            }
+
+            fetch('/add-command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, ip, mac }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                addCommandToUI(name, ip, mac);
+                document.getElementById('name').value = '';
+                document.getElementById('ip').value = '';
+                document.getElementById('mac').value = '';
+                M.toast({html: data.message});
+            })
+            .catch(error => {
+                console.error('Error adding device:', error);
+            });
+        }
+
         // Add a command to the UI
         function addCommandToUI(name, ip, mac) {
             const commandDiv = document.createElement('div');
             commandDiv.classList.add('command-card');
-            commandDiv.id = `command-${ip}`; // ID for deletion
-            commandDiv.innerHTML = `
+            commandDiv.id = command-${ip}; // ID for deletion
+            commandDiv.innerHTML = 
                 <div style="display: flex; align-items: center;">
                     <div>
                         <!-- Red delete button -->
@@ -116,15 +154,39 @@
                 <div>
                     <!-- Online status dot and Wake-on-LAN button -->
                     <span id="status-dot-${ip}" class="status-dot offline"></span>
-                    <a id="wake-btn-${ip}" class="btn waves-effect waves-light" onclick="executeCommand('${ip}', '${mac}')">Wake-on-LAN</a>
+                    <a class="btn waves-effect waves-light" onclick="executeCommand('${ip}', '${mac}')">Wake-on-LAN</a>
                 </div>
-            `;
+            ;
             document.getElementById('command-list').appendChild(commandDiv);
         }
 
-        // Execute Wake-on-LAN command and start pinging + countdown
+// Ping a host and update UI
+function pingHost(ip) {
+            fetch('/ping-host', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ip }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusDot = document.getElementById(status-dot-${ip});
+                if (data.message === 'Device is reachable') {
+                    statusDot.classList.remove('offline');
+                    statusDot.classList.add('online');
+                } else {
+                    statusDot.classList.remove('online');
+                    statusDot.classList.add('offline');
+                }
+            })
+            .catch(error => {
+                console.error('Error pinging host:', error);
+            });
+        }
+
+        // Execute Wake-on-LAN command
         function executeCommand(ip, mac) {
-            // Send the WoL command
             fetch('/execute-command', {
                 method: 'POST',
                 headers: {
@@ -135,130 +197,12 @@
             .then(response => response.json())
             .then(data => {
                 M.toast({html: data.message});
-
-                // Start pinging the device
-                startPinging(ip);
-
-                // Start countdown and set it on the button
-                startCountdown(ip, 120);  // Countdown for 2 minutes (120 seconds)
-
-                // After 2 minutes, stop pinging and set status to yellow
-                setTimeout(() => {
-                    stopPinging(ip);
-                    setStatusYellow(ip);
-                    resetWakeButton(ip); // Reset the button after countdown
-                }, 120000); // 2 minutes in milliseconds
+                // Ping the device after the command
+                pingHost(ip);
             })
             .catch(error => {
                 console.error('Error executing command:', error);
             });
-        }
-
-        // Start pinging the host
-        function startPinging(ip) {
-            if (pingTimers[ip]) {
-                clearInterval(pingTimers[ip]); // Clear any existing ping interval
-            }
-
-            // Ping the device every 5 seconds for 2 minutes
-            pingTimers[ip] = setInterval(() => {
-                pingHost(ip);
-            }, 5000);
-        }
-
-        // Stop pinging the host
-        function stopPinging(ip) {
-            if (pingTimers[ip]) {
-                clearInterval(pingTimers[ip]);
-                delete pingTimers[ip];
-            }
-        }
-
-        // Ping a host and update UI
-        function pingHost(ip) {
-            fetch('/ping-host', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ip }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                const statusDot = document.getElementById(`status-dot-${ip}`);
-                if (data.message === 'Device is reachable') {
-                    statusDot.classList.remove('offline', 'yellow');
-                    statusDot.classList.add('online');
-                } else {
-                    statusDot.classList.remove('online', 'yellow');
-                    statusDot.classList.add('offline');
-                }
-            })
-            .catch(error => {
-                console.error('Error pinging host:', error);
-            });
-        }
-
-        // Start countdown timer on the Wake button
-        function startCountdown(ip, duration) {
-            const wakeButton = document.getElementById(`wake-btn-${ip}`);
-            let remainingTime = duration; // Countdown starts from 120 seconds (2 minutes)
-
-            // Update the button text every second
-            countdownTimers[ip] = setInterval(() => {
-                wakeButton.textContent = `Waking... (${remainingTime}s)`;
-                remainingTime--;
-
-                // Stop the countdown when it reaches 0
-                if (remainingTime < 0) {
-                    clearInterval(countdownTimers[ip]);
-                }
-            }, 1000);
-        }
-
-        // Reset Wake button text to "Wake-on-LAN" after countdown ends
-        function resetWakeButton(ip) {
-            const wakeButton = document.getElementById(`wake-btn-${ip}`);
-            wakeButton.textContent = 'Wake-on-LAN';
-        }
-
-        // Set status to yellow after 2 minutes
-        function setStatusYellow(ip) {
-            const statusDot = document.getElementById(`status-dot-${ip}`);
-            if (statusDot) {
-                statusDot.classList.remove('online', 'offline');
-                statusDot.classList.add('yellow');
-            }
-        }
-
-        // Save a new command
-        function saveCommand() {
-            const name = document.getElementById('device-name').value;
-            const ip = document.getElementById('device-ip').value;
-            const mac = document.getElementById('device-mac').value;
-
-            if (name && ip && mac) {
-                fetch('/save-command', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ name, ip, mac }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    M.toast({html: data.message});
-                    addCommandToUI(name, ip, mac);
-                    document.getElementById('device-name').value = '';
-                    document.getElementById('device-ip').value = '';
-                    document.getElementById('device-mac').value = '';
-                })
-                .catch(error => {
-                    console.error('Error saving command:', error);
-                });
-            } else {
-                M.toast({html: 'Please fill in all fields'});
-            }
         }
 
         // Delete a command
@@ -275,7 +219,7 @@
                 M.toast({html: data.message});
                 // Remove the device from the UI
                 const commandList = document.getElementById('command-list');
-                const commandDiv = document.getElementById(`command-${ip}`);
+                const commandDiv = document.getElementById(command-${ip});
                 if (commandDiv) {
                     commandList.removeChild(commandDiv);
                 }
@@ -285,7 +229,5 @@
             });
         }
     </script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 </body>
 </html>

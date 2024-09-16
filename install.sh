@@ -24,7 +24,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/node /opt/etherwakeui/server.js
-WorkingDirectory=/root/etherwakeui
+WorkingDirectory=/opt/etherwakeui
 Restart=always
 User=$(whoami)
 Group=$(whoami)

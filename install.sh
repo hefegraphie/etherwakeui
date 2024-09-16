@@ -4,14 +4,14 @@
 apt update
 
 # Install necessary packages
-apt install -y curl git nodejs npm
+apt install -y curl git nodejs npm etherwake
 
 # Install dotenv package globally
 npm install -g dotenv
 
 # Clone the project repository
-git clone https://github.com/hefegraphie/etherwakeui.git
-cd etherwakeui
+git clone https://github.com/hefegraphie/etherwakeui.git /opt/etherwakeui
+cd /opt/etherwakeui
 
 # Install project dependencies
 npm install
@@ -23,7 +23,7 @@ Description=Etherwake UI Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /root/etherwakeui/server.js
+ExecStart=/usr/bin/node /opt/etherwakeui/server.js
 WorkingDirectory=/root/etherwakeui
 Restart=always
 User=$(whoami)
@@ -35,7 +35,7 @@ WantedBy=multi-user.target
 EOF
 
 # Replace /path/to/etherwakeui with the actual path to your project directory
-sudo sed -i "s|/root/etherwakeui|$(pwd)|g" /etc/systemd/system/etherwakeui.service
+sudo sed -i "s|/opt/etherwakeui|$(pwd)|g" /etc/systemd/system/etherwakeui.service
 
 # Reload systemd to recognize the new service
 sudo systemctl daemon-reload

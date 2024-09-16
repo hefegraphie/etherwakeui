@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -58,59 +58,59 @@
     <div class="container">
         <h1>Wake-on-LAN</h1>
         
-        <!-- Button zum Anzeigen des Formulars -->
+        <!-- Button to show the form -->
         <a class="btn waves-effect waves-light" onclick="toggleForm()">+</a>
 
-        <!-- Formular zum Hinzufügen neuer Rechner -->
+        <!-- Form to add new devices -->
         <div id="new-command-form" class="input-field">
             <input type="text" id="name" placeholder="Name" />
-            <input type="text" id="ip" placeholder="IP-Adresse" />
-            <input type="text" id="mac" placeholder="MAC-Adresse" />
-            <a class="btn waves-effect waves-light" onclick="addCommand()">Rechner hinzufügen</a>
+            <input type="text" id="ip" placeholder="IP Address" />
+            <input type="text" id="mac" placeholder="MAC Address" />
+            <a class="btn waves-effect waves-light" onclick="addCommand()">Add Device</a>
         </div>
 
-        <!-- Bereich für die Liste der Rechner -->
+        <!-- Section for the list of devices -->
         <div id="command-list"></div>
     </div>
 
     <!-- Materialize JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
-        // Lade die gespeicherten Rechner, sobald die Seite geladen wird
+        // Load saved devices when the page loads
         window.onload = function() {
             loadCommands();
         };
 
-        // Funktion zum Umschalten der Sichtbarkeit des Formulars
+        // Toggle form visibility
         function toggleForm() {
             const form = document.getElementById('new-command-form');
             form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
         }
 
-        // Funktion zum Laden der gespeicherten Rechner
+        // Load saved commands
         function loadCommands() {
             fetch('/get-commands')
                 .then(response => response.json())
                 .then(commands => {
                     commands.forEach(command => {
                         addCommandToUI(command.name, command.ip, command.mac);
-                        // Pinge den Rechner nach dem Laden der Seite
+                        // Ping the device after loading
                         pingHost(command.ip);
                     });
                 })
                 .catch(error => {
-                    console.error('Fehler beim Laden der Befehle:', error);
+                    console.error('Error loading commands:', error);
                 });
         }
 
-        // Funktion zum Hinzufügen eines neuen Rechners (und Speichern auf dem Server)
+        // Add a new command (and save on the server)
         function addCommand() {
             const name = document.getElementById('name').value;
             const ip = document.getElementById('ip').value;
             const mac = document.getElementById('mac').value;
 
             if (!name || !ip || !mac) {
-                M.toast({html: 'Bitte Name, IP-Adresse und MAC-Adresse eingeben.'});
+                M.toast({html: 'Please enter Name, IP Address, and MAC Address.'});
                 return;
             }
 
@@ -130,15 +130,15 @@
                 M.toast({html: data.message});
             })
             .catch(error => {
-                console.error('Fehler beim Hinzufügen des Rechners:', error);
+                console.error('Error adding device:', error);
             });
         }
 
-        // Funktion, um den Rechner in der UI anzuzeigen
+        // Add a command to the UI
         function addCommandToUI(name, ip, mac) {
             const commandDiv = document.createElement('div');
             commandDiv.classList.add('command-card');
-            commandDiv.id = `command-${ip}`; // ID für das Löschen hinzufügen
+            commandDiv.id = `command-${ip}`; // ID for deletion
             commandDiv.innerHTML = `
                 <div style="display: flex; align-items: center;">
                     <div>
@@ -160,7 +160,7 @@
             document.getElementById('command-list').appendChild(commandDiv);
         }
 
-        // Funktion, um den Ping auszuführen
+        // Ping a host
         function pingHost(ip) {
             fetch('/ping-host', {
                 method: 'POST',
@@ -172,7 +172,7 @@
             .then(response => response.json())
             .then(data => {
                 const statusDot = document.getElementById(`status-dot-${ip}`);
-                if (data.message.includes('erreichbar')) {
+                if (data.message.includes('reachable')) {
                     statusDot.classList.remove('offline');
                     statusDot.classList.add('online');
                 } else {
@@ -181,11 +181,11 @@
                 }
             })
             .catch(error => {
-                console.error('Fehler beim Pingen des Hosts:', error);
+                console.error('Error pinging host:', error);
             });
         }
 
-        // Funktion zum Ausführen des Wake-on-LAN-Befehls
+        // Execute Wake-on-LAN command
         function executeCommand(ip, mac) {
             fetch('/execute-command', {
                 method: 'POST',
@@ -197,15 +197,15 @@
             .then(response => response.json())
             .then(data => {
                 M.toast({html: data.message});
-                // Pinge den Rechner nach dem Befehl
+                // Ping the device after the command
                 pingHost(ip);
             })
             .catch(error => {
-                console.error('Fehler beim Ausführen des Befehls:', error);
+                console.error('Error executing command:', error);
             });
         }
 
-        // Funktion zum Löschen eines Rechners
+        // Delete a command
         function deleteCommand(ip) {
             fetch('/delete-command', {
                 method: 'POST',
@@ -217,7 +217,7 @@
             .then(response => response.json())
             .then(data => {
                 M.toast({html: data.message});
-                // Entferne den Rechner aus der UI
+                // Remove the device from the UI
                 const commandList = document.getElementById('command-list');
                 const commandDiv = document.getElementById(`command-${ip}`);
                 if (commandDiv) {
@@ -225,7 +225,7 @@
                 }
             })
             .catch(error => {
-                console.error('Fehler beim Löschen des Rechners:', error);
+                console.error('Error deleting command:', error);
             });
         }
     </script>
